@@ -41,5 +41,7 @@ public class CountLetters
 		System.out.println((char)(i +'A') + ": " + counts[i]);
 
     }
+    
+    System.out.println("End of file");
 
 }
