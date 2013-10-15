@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+	android:id="@+id/buttons"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:background="#FFFFFF">
+
+	<RelativeLayout
+	    android:id="@+id/widget37"
+	    android:layout_width="107dp"
+	    android:layout_height="431dp"
+	    android:layout_alignParentBottom="true"
+	    android:layout_alignParentLeft="true"
+	    android:layout_alignParentTop="true" >
+
+	    <Button
+	        android:id="@+id/Procedures"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentLeft="true"
+	        android:layout_alignParentRight="true"
+	        android:layout_alignParentTop="true"
+	        android:background="@drawable/selector"
+	        android:text="Procedures" />
+
+	    <Button
+	        android:id="@+id/SocialHistory"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentLeft="true"
+	        android:layout_below="@+id/Procedures"
+	        android:background="@drawable/selector"
+	        android:text="Social History" />
+
+	    <Button
+	        android:id="@+id/Immunizations"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentLeft="true"
+	        android:layout_below="@+id/SocialHistory"
+	        android:background="@drawable/selector"
+	        android:text="Immuni-zations" />
+
+	    <Button
+	        android:id="@+id/FamilyHistory"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentLeft="true"
+	        android:layout_below="@+id/Immunizations"
+	        android:background="@drawable/selector"
+	        android:text="Family History" />
+
+	    <Button
+	        android:id="@+id/Problems"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentLeft="true"
+	        android:layout_below="@+id/FamilyHistory"
+	        android:background="@drawable/selector"
+	        android:text="Problems" />
+
+	    <ImageView
+	        android:id="@+id/imageView1"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentBottom="true"
+	        android:layout_alignParentLeft="true"
+	        android:layout_alignParentRight="true"
+	        android:src="@drawable/patient_history" />
+
+	</RelativeLayout>
+
+	<RelativeLayout
+	    android:id="@+id/view"
+	    android:layout_width="205dp"
+	    android:layout_height="431dp"
+	    android:layout_alignParentBottom="true"
+	    android:layout_alignParentRight="true"
+	    android:layout_alignParentTop="true"
+	    android:layout_toRightOf="@+id/widget37" >
+
+		<TextView
+		    android:id="@+id/history1"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_alignParentLeft="true"
+		    android:layout_alignParentTop="true"
+		    android:textSize="16sp" 
+		    android:scrollbars="vertical"
+		    android:text="" />
+
+	</RelativeLayout>
+
+</RelativeLayout>

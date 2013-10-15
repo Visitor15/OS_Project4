@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+   
+    
+	<RelativeLayout android:id="@+id/allergies" 
+	    android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		
+	    <TextView android:id="@+id/drcontact1"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textSize="14sp"
+			android:layout_alignParentLeft="true" 
+			android:scrollbars="vertical"/>
+	</RelativeLayout>
+	
+	
+	<RelativeLayout android:id="@+id/status" 
+	    android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		
+	    <TextView android:id="@+id/drcontact2"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textColor="#FFaaaaaa"
+			android:textSize="14sp"
+			android:layout_alignParentLeft="true" />
+	</RelativeLayout>
+	
+	
+	<RelativeLayout android:id="@+id/medications" 
+	    android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		
+	    <TextView android:id="@+id/medList"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textColor="#FFaaaaaa"
+			android:textSize="14sp"
+			android:layout_alignParentRight="true" />
+	</RelativeLayout>
+	
+	
+	<RelativeLayout android:id="@+id/results" 
+	    android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		
+	    <TextView android:id="@+id/resultList"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textColor="#FFaaaaaa"
+			android:textSize="14sp"
+			android:layout_alignParentRight="true" />
+	</RelativeLayout>
+	
+	
+	<RelativeLayout android:id="@+id/vitals" 
+	    android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		
+	    <TextView android:id="@+id/vitalList"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textColor="#FFaaaaaa"
+			android:textSize="14sp"
+			android:layout_alignParentRight="true" />
+	</RelativeLayout>
+	
+	
+	<RelativeLayout android:id="@+id/advDirect" 
+	    android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		
+	    <TextView android:id="@+id/directList"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textColor="#FFaaaaaa"
+			android:textSize="14sp"
+			android:layout_alignParentRight="true" />
+	</RelativeLayout>
+</LinearLayout>

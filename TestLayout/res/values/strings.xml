@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">CDA Health Care</string>
+    <string-array name="catergory_array">
+        <item>Personal information</item>
+        <item>Visit Information</item>
+        <item>Critical Info</item>
+        <item>Patient history</item>
+        <item>Dr. Contact info</item>
+        <item>Documentation info</item>
+        <item>Send Referral(Encrypt)</item>
+    </string-array>
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
+    <string name="action_settings">Web search</string>
+    <string name="app_not_available">Sorry, there\'s no web browser available</string>
+    
+
+    <string name="hello_world">Hello world!</string>
+    <string name="encryption">Encryption</string>
+    <string name="explorer">Explorer</string>
+    <string name="dialog_read_from_dir">Open from dir</string>
+
+</resources>
