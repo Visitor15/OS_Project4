@@ -37,6 +37,11 @@ pthread_mutex_t mutex;
 
 int main(int argc, char *argv[])
 {
+ 
+    //this is where the code is breaking if you run it in netbeans. If you run it in cmd line, with an argument
+    //you get something to print. However, its not printing right, I am going to add the id for the 
+    //process to return the id, and i just need to fix my code semantics for it print 
+    //properly, because its an ugly print. 
     int tts= *((int *)argv[1]); //time to sleep
     
     
