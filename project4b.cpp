@@ -49,11 +49,8 @@ int main() {
 	readInData(unsorted_list);
 	initSharedMemoryObjs();
 	for(int i = 0; i < unsorted_list.size(); i++) {
-//		master_unsorted_list[i] = unsorted_list.at(i);
 		p_master_unsorted_list[i] = unsorted_list.at(i);
 	}
-
-	std::cout << "Unsorted list elements: " << (sizeof(p_master_unsorted_list) / sizeof(long)) << std::endl;
 
 	spawnChildrenProcesses(num_child_processes);
 
@@ -70,9 +67,6 @@ void readInData(std::vector<long> &list) {
 	std::ifstream inStream("numbers.txt");
 	std::string m_line;
 	while (std::getline(inStream, m_line)) {
-
-//		std::cout << "Got line: " << m_line << std::endl;
-
 		//Converting from a string to an long.
 		long number = strtol((char*) m_line.c_str(), NULL, 0);
 
@@ -114,6 +108,10 @@ void spawnChildrenProcesses(int num_of_children) {
 		}
 		case 0: {
 			// Child process
+
+			/*
+			 * NOTE: Locking and critical sections need to be implemented.
+			 */
 
 			sleep(3);
 
