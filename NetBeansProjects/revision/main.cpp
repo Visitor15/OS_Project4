@@ -1,16 +1,14 @@
-//
-//  main.cpp
-//  Part1_Revised
-//
-//  Created by Shema on 10/16/13.
-//  Copyright (c) 2013 Coders. All rights reserved.
-//
+//  CS3242 Operating Systems
+//  Fall 2013
+//  Project 4: Process Synchronization, Part 1
+//  Nick Champagne and John Mutabazi
+//  Date: 10/23/2013
+//  File: project4a.cpp
 
 #include <cstdlib>
 #include <stdlib.h>
 #include <iostream>
 #include <pthread.h>
-#include <queue>
 #include <cstdio>
 #include "buffer.h"
 #include <semaphore.h>
@@ -19,6 +17,7 @@
 #include <unistd.h>
 #include <pthread.h>
 
+using namespace std;
 
 void *producer(void *item);
 void *consumer(void *arg);
@@ -29,14 +28,13 @@ sem_t full;
 sem_t empty;
 //int s=sem_init(&empty, 1, 10);
 pthread_mutex_t mutex;
-//sem_t mutex;
-
 
 //int p=sem_init(&mutex, 1, 1);
 
 
 int main(int argc, char *argv[])
 {
+    printf("main starting:");
     int tts= *((int *)argv[1]); //time to sleep
     
     
@@ -53,6 +51,9 @@ int main(int argc, char *argv[])
     pthread_join(pid, NULL);
     pthread_join(pid1, NULL);
     
+    printf("producer process ", pid);
+    printf("consumer process ", pid1);
+    
     
     int numbOfPro= *((int*)argv[2]); //number of producers
     int numbOfCon= *((int*)argv[3]);
@@ -60,31 +61,10 @@ int main(int argc, char *argv[])
     
     buf_init(); //initializing buffer
     
-    producer(&numbOfPro);
-    consumer(&numbOfCon);
+    cout<< "Number of producer produced" << producer(&numbOfPro);
+    cout<< "Number of producer produced" << consumer(&numbOfCon);
     usleep(tts);
     exit(0);
-    
-    
-    /*
-     pthread_t pid, cid;
-     pthread_attr_t attr;
-     pthread_attr_init(&attr);
-     pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
-     
-     numIters = atoi(argv[1]);
-     sem_init(&empty, SHARED, 1);  / sem empty = 1 /
-    sem_init(&full, SHARED, 0);   / sem full = 0  /
-    
-    printf("main started\n");
-    pthread_create(&pid, &attr, Producer, NULL);
-    pthread_create(&cid, &attr, Consumer, NULL);
-    pthread_join(pid, NULL);
-    pthread_join(cid, NULL);
-    printf("main done\n");
-    
-    */
-    
 }
 
 void *producer(void *val)
@@ -96,18 +76,18 @@ void *producer(void *val)
         //will create threads here
         item = rand();
         sem_wait(&empty);
+        
         //semaphore
         
         //sem_wait(&mutex);
         pthread_mutex_lock(&mutex);
         int result = insert_item(&item);
+        
         printf((result==0?"successfully added":"failed to add"));
         count++;
         
         pthread_mutex_unlock(&mutex);
-        sem_post(&empty);
-        
-        
+        sem_post(&empty);     
     }while(true);
     return NULL;
 }

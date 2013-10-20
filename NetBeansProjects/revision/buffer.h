@@ -1,9 +1,10 @@
-/* 
- * File:   buffer.h
- * Author: johnniecris
- *
- * Created on October 15, 2013, 12:54 AM
- */
+//  CS3242 Operating Systems
+//  Fall 2013
+//  Project 4: Process Synchronization, Part 1
+//  Nick Champagne and John Mutabazi
+//  Date: 10/23/2013
+//  File: project4a.cpp
+
 #include <stdlib.h>
 #include <semaphore.h>
 #ifndef BUFFER_H
@@ -27,8 +28,7 @@ void buf_init(){
 int insert_item(buffer_item *item){
     if(head!=(tail+1)%MAX_SIZE){
         buf[tail]=*item;
-        tail++;
-            
+        tail++;    
         return 0;
     }
     return -1;
