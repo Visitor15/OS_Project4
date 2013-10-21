@@ -26,10 +26,11 @@ int* num_of_running_processes = 0;
 int* curr_index = 0;
 long* p_master_unsorted_list;
 long* p_master_sorted_list;
-bool* should_sort = false;
+bool* should_sort = 0;
 
 //Global semaphore
 sem_t* m_semaphore;
+sem_t* m_write_sema;
 
 // Arrays
 long master_unsorted_list[ARRAY_SIZE];
@@ -56,9 +57,9 @@ void onChildProcessFinished(std::vector<long> &unsortedList);
 void appendElementsToMasterList(std::vector<long> &list);
 void exitAndCleanChildProcess();
 void exitAndCleanParentProcess();
+void writeContentsToFile(long list[], std::string fileName);
 void writeToScreen(std::vector<long> &list);
-void doMergeSort(long list[]);
-long *mergeUnsortedLists(long firstList[], long secondList[]);
+void doQuickSort(long* unsortedList, long leftMost, long rightMost);
 
 int main() {
 
@@ -88,12 +89,10 @@ int main() {
 	std::cout << "All processes finished!" << std::endl;
 
 	sem_wait(m_semaphore);
-	doMergeSort(p_master_unsorted_list);
-
-	for (int i = 0; i < ARRAY_SIZE; i++) {
-		std::cout << p_master_sorted_list[i] << std::endl;
-	}
+	doQuickSort(p_master_sorted_list, 0, (ARRAY_SIZE - 1));
 	sem_post(m_semaphore);
+
+	writeContentsToFile(p_master_sorted_list, "testFile.txt");
 
 	exitAndCleanParentProcess();
 
@@ -113,6 +112,10 @@ void readInData(std::vector<long> &list) {
 }
 
 void initSharedMemoryObjs() {
+
+	m_write_sema = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE,
+	MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	sem_init(m_write_sema, 1, 1);
 
 	m_semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE,
 	MAP_SHARED | MAP_ANONYMOUS, -1, 0);
@@ -223,108 +226,100 @@ void writeToScreen(std::vector<long> &list) {
 	sem_post(m_semaphore);
 }
 
-void doSelectionSort(std::vector<long> &unsortedList) {
+void doSelectionSort(std::vector<long> &list) {
 	long minIndex;
 	long tempVal;
 	long i;
 	long j;
 
-	for (i = 0; i < unsortedList.size() - 1; i++) {
+	for (i = 0; i < list.size() - 1; i++) {
 		minIndex = i;
 
-		for (j = i + 1; j < unsortedList.size(); j++) {
+		for (j = i + 1; j < list.size(); j++) {
 
-			if (unsortedList.at(j) < unsortedList.at(minIndex)) {
+			if (list.at(j) < list.at(minIndex)) {
 				minIndex = j;
 			}
 		}
 
 		if (minIndex != i) {
-			tempVal = unsortedList.at(i);
-			unsortedList.at(i) = unsortedList.at(minIndex);
-			unsortedList.at(minIndex) = tempVal;
+			tempVal = list.at(i);
+			list.at(i) = list.at(minIndex);
+			list.at(minIndex) = tempVal;
 		}
 	}
 
-	std::vector<long> sortedList = unsortedList;
-	onChildProcessFinished(sortedList);
+	onChildProcessFinished(list);
 }
 
 void onChildProcessFinished(std::vector<long> &unsortedList) {
-
-	// Critical section
 	appendElementsToMasterList(unsortedList);
 }
 
 void appendElementsToMasterList(std::vector<long> &list) {
+	const int BUFFER_SIZE = 10;
+	long buffer[BUFFER_SIZE];
 	for (int i = 0; i < list.size(); i++) {
+		buffer[i % BUFFER_SIZE] = list.at(i);
+		if ((i + 1) % BUFFER_SIZE == 0) {
 
-		if (i & 10 == 0) {
 			sem_wait(m_semaphore);
-			p_master_sorted_list[*curr_index] = list.at(i);
+			for (int j = 0; j < BUFFER_SIZE; j++) {
+				p_master_sorted_list[*curr_index] = buffer[j];
 
-			// Incrementing the global index
-			*curr_index = *curr_index + 1;
-
-			// We appended to elements to the master sorted list.
-			// We need to notify the parent process it should sort this list again.
-			*should_sort = true;
+				*curr_index = *curr_index + 1;
+			}
 			sem_post(m_semaphore);
 		}
+
 	}
 }
 
-void doMergeSort(long list[]) {
-	int list_len = (sizeof(list) / sizeof(long));
-	int mMiddle = list_len / 2;
-	long mLeft[mMiddle];
-	long mRight[mMiddle];
+void doQuickSort(long* unsortedList, long leftMost,
+		long rightMost) {
 
-	if (list_len > 1) {
-		for (int i = 0; i < mMiddle; i++) {
-			mLeft[i] = list[i];
+	long tempVal;
+	long i = leftMost;
+	long j = rightMost;
+	long pivotVal = unsortedList[(leftMost + rightMost) / 2];
+
+	while (i <= j) {
+		while (unsortedList[i] < pivotVal)
+			i++;
+		while (unsortedList[j] > pivotVal)
+			j--;
+		if (i <= j) {
+			tempVal = unsortedList[i];
+			unsortedList[i] = unsortedList[j];
+			unsortedList[j] = tempVal;
+			i++;
+			j--;
 		}
+	}
 
-		for (int j = mMiddle; j < list_len; j++) {
-			mRight[j] = list[j];
-		}
-
-		doMergeSort(mLeft);
-		doMergeSort(mRight);
-		p_master_sorted_list = mergeUnsortedLists(mLeft, mRight);
+	if (leftMost < j) {
+		doQuickSort(unsortedList, leftMost, j);
+	}
+	if (i < rightMost) {
+		doQuickSort(unsortedList, i, rightMost);
 	}
 }
 
-long *mergeUnsortedLists(long firstList[], long secondList[]) {
-	std::vector<long> finalSortedList;
+void writeContentsToFile(long list[], std::string fileName) {
+	std::cout << "Writing contents to file: " << fileName << std::endl;
 
-	int first_length = (sizeof(firstList) / sizeof(long));
-	int second_length = (sizeof(secondList) / sizeof(long));
+	std::ofstream outFile((char*) fileName.c_str(), std::ios::app);
 
-	long sorted_list[first_length + second_length];
-
-	int current_index = 0;
-	int tmp_index = 0;
-
-	while (first_length > current_index || second_length > current_index) {
-		if (first_length > current_index && second_length > current_index) {
-			if (firstList[current_index] <= secondList[current_index]) {
-				sorted_list[current_index] = firstList[tmp_index];
-
-			} else {
-				sorted_list[current_index] = secondList[tmp_index];
-			}
-			++current_index;
-		} else if (first_length > current_index) {
-			sorted_list[current_index] = firstList[tmp_index];
-		} else if (second_length > current_index) {
-			sorted_list[current_index] = secondList[tmp_index];
-		}
-
-		tmp_index = 0;
+	for (int i = 0; i < ARRAY_SIZE; i++) {
+		outFile << list[i] << std::endl;
 	}
 
-	return sorted_list;
+//	std::ostream_iterator<long> out_iterator(outFile, "\n");
+//	std::copy(values.begin(), values.end(), out_iterator);
+
+	outFile.close();
+
+	std::cout << "Data written to " << fileName << std::endl;
 }
 
 void exitAndCleanChildProcess() {
