@@ -19,24 +19,15 @@ buffer_item buf[MAX_SIZE];
 
 
 void buf_init(){
-<<<<<<< HEAD
     head = 0;
     tail = 0;
-=======
-    head=0;
-    tail=0;
->>>>>>> origin/master
 
 }
 
 void insert_item(buffer_item item){
     
     buf[head] = item;
-<<<<<<< HEAD
     head = ( head + 1 ) % MAX_SIZE;
-=======
-    head = (head+1)%MAX_SIZE;
->>>>>>> origin/master
         
         
     }
@@ -51,29 +42,8 @@ void insert_item(buffer_item item){
 int remove_item(){
     
     int item = buf[tail];
-<<<<<<< HEAD
     tail = ( tail + 1 ) % MAX_SIZE;
  
     return item;
 }
 #endif	/* BUFFER_H */
-=======
-    tail= (tail+1) % MAX_SIZE;
-    
-   /* 
-    if(head!=tail && tail != -1){
-        if(head==tail)
-        {
-            head=-1;
-            tail=-1;
-        }else{
-            head=(head%1)%MAX_SIZE;
-        }
-        return 0;
-    }
-    */ 
-    return item;
-}
-#endif	/* BUFFER_H */
-
->>>>>>> origin/master
