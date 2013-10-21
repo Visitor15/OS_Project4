@@ -26,7 +26,6 @@ int* num_of_running_processes = 0;
 int* curr_index = 0;
 long* p_master_unsorted_list;
 long* p_master_sorted_list;
-bool* should_sort = 0;
 
 //Global semaphore
 sem_t* m_semaphore;
@@ -128,10 +127,6 @@ void initSharedMemoryObjs() {
 	p_master_sorted_list = (long*) mmap(NULL, sizeof(master_sorted_list),
 	PROT_READ | PROT_WRITE,
 	MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-
-	should_sort = (bool*) mmap(NULL, sizeof(bool), PROT_READ | PROT_WRITE,
-	MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-
 }
 
 void spawnChildrenProcesses(int num_of_children) {
