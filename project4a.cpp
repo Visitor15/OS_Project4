@@ -1,64 +1,102 @@
+//  CS3242 Operating Systems
+//  Fall 2013
+//  Project 4: Process Synchronization, Part 1
+//  Nick Champagne and John Mutabazi
+//  Date: 10/23/2013
+//  File: project4a.cpp
 
+#include <cstdlib>
+#include <stdlib.h>
+#include <iostream>
+#include <pthread.h>
+#include <cstdio>
 #include "buffer.h"
-#include <stdio.h>
 #include <semaphore.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <pthread.h>
 
+using namespace std;
 
-void *producer(int *item);
-void *consumer (int *arg);
+void *producer(void *item);
+void *consumer(void *arg);
 
 
 sem_t full;
-//int rc =sem_init(&full, 1, 0);
 sem_t empty;
-//int s=sem_init(&empty, 1, 10);
-sem_t mutex;
-//int p=sem_init(&mutex, 1, 1);
+pthread_mutex_t mutex;
 
+int main(int argc, char *argv[])
+{
+    printf("main starting:");
 
-int main(int argc, char *argv[]){
-    int tts= (int)argv[0]; //time to sleep
     
-    int numbOfPro= (int)argv[1]; //number of producers
-    int numbOfCon= (int)argv[2];
-      
-    buf_init();
+    pthread_t pid, pid1;
+    pthread_attr_t attr; 
+    pthread_attr_init(&attr);
+    pthread_attr_setscope(&attr,PTHREAD_SCOPE_SYSTEM);
     
-    producer(&numbOfPro);
-    consumer(&numbOfCon);
+    pthread_create(&pid, &attr, producer, NULL);
+    pthread_create(&pid1, &attr, consumer, NULL);
+    pthread_join(pid, NULL);
+    pthread_join(pid1, NULL);
     
+    //printf("\nproducer process ", pid);
+    //printf("\nconsumer process ", pid1);
+
+    
+    int numbOfPro = 2;
+    int numbOfCon = 2;
+    
+    buf_init(); //initializing buffer
+    
+    sleep(1);
+    exit(0);
 }
 
-void *producer(int *arg){
+void *producer(void *val)
+{
     int count =0;
     buffer_item item;
+    pthread_mutex_init(&mutex,NULL); //creating the mutex
+    printf("\nProducer created");
     do{
-        //will create threads here
         item = rand();
         sem_wait(&empty);
-        sem_wait(&mutex);
-        int result =insert_item(&item);
-        printf((&result==0?"successfully added":"failed to add"));
-        count++;
-        signal(&mutex);
-        signal(&empty);
         
-    }while(&count!=arg);
+        pthread_mutex_lock(&mutex);
+        insert_item(item);    
+        printf("producer produced %d\n", item);
+        count++;
+        
+        pthread_mutex_unlock(&mutex);
+        sem_post(&empty);     
+    
+    } while(true);
+    printf("Number of producers produced", count);
+    return NULL;
 }
 
-void *consumer(int *arg){
+void *consumer(void *arg)
+{
     int count =0;
-        do{
-            //will create threads here
-            sem_wait(&full);
-            sem_wait(&mutex);
-            
-            int result =remove_item();
-            printf((result==0?"successfully removed":"failed to remove"));
-            count++;
-            
-            signal(&mutex);
-            signal(&empty);
+    pthread_mutex_init(&mutex,NULL); //creating the mutex
+    printf("\nConsumer created");
+    do{
+        sem_wait(&full);
+        pthread_mutex_lock(&mutex); //mutex acquired
+        
+        int item_Removed =remove_item();
+        
+        printf("Consumer consumed %d\n", item_Removed);
         count++;
-    }while(&count!=arg);
+        
+        pthread_mutex_unlock(&mutex); //mutex released
+        sem_post(&empty);
+        count++;
+        
+    } while(&count!=arg);
+    printf("Number of consumers produced ", count);
+    return NULL;
 }
