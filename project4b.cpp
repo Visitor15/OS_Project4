@@ -186,18 +186,11 @@ void logSpawnedChild(int pid) {
 }
 
 void doChildProcessWork() {
-	int offset = ((process_index - 1) * working_list_size) - 1;
+	int offset = ((process_index - 1) * working_list_size) ;
 	working_list = getWorkingList(p_master_unsorted_list, offset,
 			working_list_size);
 
 	doSelectionSort(working_list);
-
-//	sem_wait(m_semaphore);
-//	for (int i = 0; i < 10; i++) {
-//		std::cout << "PID: " << process_index << " " << working_list.at(i)
-//				<< std::endl;
-//	}
-//	sem_post(m_semaphore);
 
 	exitAndCleanChildProcess();
 }
