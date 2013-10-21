@@ -73,26 +73,15 @@ int main() {
 	spawnChildrenProcesses(num_child_processes);
 
 	while (*num_of_running_processes > 0) {
-		if (*should_sort) {
-//			sem_wait(m_semaphore);
-//			doMergeSort(p_master_unsorted_list);
-//
-//			for (int i = 0; i < ARRAY_SIZE; i++) {
-//				std::cout << p_master_sorted_list[i] << std::endl;
-//			}
-//			sem_post(m_semaphore);
-		} else {
-			sleep(1);
-		}
+		sleep(1);
 	}
 
 	std::cout << "All processes finished!" << std::endl;
 
 	sem_wait(m_semaphore);
 	doQuickSort(p_master_sorted_list, 0, (ARRAY_SIZE - 1));
-	sem_post(m_semaphore);
-
 	writeContentsToFile(p_master_sorted_list, "testFile.txt");
+	sem_post(m_semaphore);
 
 	exitAndCleanParentProcess();
 
@@ -300,16 +289,11 @@ void doQuickSort(long* unsortedList, long leftMost,
 
 void writeContentsToFile(long list[], std::string fileName) {
 	std::cout << "Writing contents to file: " << fileName << std::endl;
-
 	std::ofstream outFile((char*) fileName.c_str(), std::ios::app);
 
 	for (int i = 0; i < ARRAY_SIZE; i++) {
 		outFile << list[i] << std::endl;
 	}
-
-//	std::ostream_iterator<long> out_iterator(outFile, "\n");
-//	std::copy(values.begin(), values.end(), out_iterator);
-
 	outFile.close();
 
 	std::cout << "Data written to " << fileName << std::endl;
