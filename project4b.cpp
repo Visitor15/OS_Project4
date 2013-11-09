@@ -1,174 +1,155 @@
 /*
- * project4b.cpp
- *
- *  Created on: Oct 19, 2013
- *  Author: visitor15
+ * 	CS3442			Operating Systems
+ * 	Semester:    Fall 2013
+ * 	Project 4:   	Process Synchronization, Part 2
+ * 	Name:       		 Nick Champagne and John Mutabazi
+ * 	Date:        		10/23/2013
+ * 	File:        			project4b.cpp
  */
-#include <stdio.h>
-#include <iostream>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <sys/wait.h>
-#include <fstream>
-#include <iterator>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <string.h>
-#include <semaphore.h>
 
-static const long ARRAY_SIZE = 10000;
+#include "project4b.h"
 
-// Global variables
-int* num_of_running_processes = 0;
-long* p_master_unsorted_list;
-long* p_master_sorted_list;
-
-//Global semaphore
-sem_t* m_semaphore;
-
-// Arrays
-long master_unsorted_list[ARRAY_SIZE];
-long master_sorted_list[ARRAY_SIZE];
-int* child_processes;
-
-// Local process variables
-pid_t pid;
-int num_child_processes = 4;
-int working_list_size = 2500;
-int process_index;
-
-std::vector<long> working_list;
-std::vector<long> unsorted_list;
-
-void readInData(std::vector<long> &list);
-void initSharedMemoryObjs();
-void spawnChildrenProcesses(int num_of_children);
-void doSelectionSort(std::vector<long> &unsortedList);
-std::vector<long> getWorkingList(long* list, int offset, int length);
-void logSpawnedChild(int pid);
-void doChildProcessWork();
-void exitAndCleanChildProcess();
-void exitAndCleanParentProcess();
-void writeToScreen(std::vector<long> &list);
-
+/*=============================================
+ BEGIN PROGRAM
+ ==============================================*/
 int main() {
-
-	child_processes = new int[num_child_processes];
 	readInData(unsorted_list);
+	ARRAY_SIZE = unsorted_list.size();
+
+	/*
+	 * Uncomment this and you can make it dynamic! You just have to be able to evenly divide
+	 * the number of elements in the list read in from the file.
+	 */
+//	std::cout << "How many processes would you like to spawn?" << std::endl;
+//	std:: cout << "-> ";
+//	std::cin >> CHILD_PROCESS_COUNT;
+
+	WORKING_LIST_SIZE = ARRAY_SIZE / CHILD_PROCESS_COUNT;
+
+	//	 Initializing shared memory and semaphore
 	initSharedMemoryObjs();
+
+	// 	Since we read data into a vector<long> we have to copy it over to a shared array
 	for (int i = 0; i < unsorted_list.size(); i++) {
 		p_master_unsorted_list[i] = unsorted_list.at(i);
 	}
+	//	Clearing the vector<long>, we don't need it anymore.
+	unsorted_list.clear();
 
-	spawnChildrenProcesses(num_child_processes);
+	spawnChildrenProcesses(CHILD_PROCESS_COUNT);
 
-	while (*num_of_running_processes > 0) {
-		wait(NULL);
+	int tmp_index = 0;
+	while (*num_of_running_processes > 0 || tmp_index < ARRAY_SIZE) {
+
+		// 	If a child process has appended 10 elements, the parent process will
+		//	sort starting from 'tmp_index' to (tmp_index + 10)
+		if (*should_sort && (*curr_index > (tmp_index + (INCREMENT - 1)))) {
+
+			std::cout << "Parent process is sorting indexes: " << tmp_index
+					<< " - " << (tmp_index + (INCREMENT - 1)) << std::endl;
+			doQuickSort(p_master_list, tmp_index, tmp_index + (INCREMENT - 1));
+
+			tmp_index = tmp_index + INCREMENT;
+		}
 	}
 
-	std::cout << "All processes finished!" << std::endl;
+	std::cout << "\n=============================================" << std::endl;
+	std::cout << "\tALL PROCESSES FINISHED!!" << std::endl;
+	std::cout << "=============================================" << std::endl;
 
+	std::cout << "\nPerforming final sort...\n\n";
+	doQuickSort(p_master_list, 0, (ARRAY_SIZE - 1));
+	writeContentsToFile(p_master_list, "project4b_SORTED.txt");
 	exitAndCleanParentProcess();
 
-	return 0;
-}
-
-void readInData(std::vector<long> &list) {
-	std::ifstream inStream("numbers.txt");
-	std::string m_line;
-	while (std::getline(inStream, m_line)) {
-		//Converting from a string to an long.
-		long number = strtol((char*) m_line.c_str(), NULL, 0);
-
-		list.push_back(number);
-	}
-	inStream.close();
+	return EXIT_SUCCESS;
 }
 
 void initSharedMemoryObjs() {
 
+	//	Global semaphore
 	m_semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE,
 	MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 	sem_init(m_semaphore, 1, 1);
 
-	child_processes = (int*) mmap(NULL, sizeof(child_processes),
-	PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	//	Set to true by a child process after it has appended 10 elements
+	should_sort = (bool*) mmap(NULL, sizeof(bool), PROT_READ | PROT_WRITE,
+	MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
-	num_of_running_processes = (int*) mmap(NULL,
+	//	Used by the parent process to wait for child processes to finished
+	//	before doing a final sort of the 'p_master_list' and cleaning up / exiting
+	num_of_running_processes = (unsigned int*) mmap(NULL,
 			sizeof(*num_of_running_processes),
 			PROT_READ | PROT_WRITE,
 			MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
+	//	Global index used by child processes when appending their data to 'p_master_list'
+	curr_index = (unsigned int*) mmap(NULL, sizeof(*curr_index),
+	PROT_READ | PROT_WRITE,
+	MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+	//	Initial work list shared child processes that use it to partition data after they are spawned
 	p_master_unsorted_list = (long*) mmap(NULL, sizeof(long) * ARRAY_SIZE,
 	PROT_READ | PROT_WRITE,
 	MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
-	p_master_sorted_list = (long*) mmap(NULL, sizeof(master_sorted_list),
+	//	Master list where child append their data after processing
+	p_master_list = (long*) mmap(NULL, sizeof(long) * ARRAY_SIZE,
 	PROT_READ | PROT_WRITE,
 	MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-
 }
 
-void spawnChildrenProcesses(int num_of_children) {
+void spawnChildrenProcesses(unsigned int num_of_children) {
+
+	std::cout << "Spawning " << num_of_children << " processe(s)" << std::endl;
 
 	for (int i = 1; i <= num_of_children; i++) {
 		pid = fork();
 
 		switch (pid) {
 		case -1: {
-			// Error has occurred
-
+			//	Error has occurred
+			std::cout << "An ERROR has occurred! Exiting";
+			exit(EXIT_FAILURE);
 			break;
 		}
 		case 0: {
-			// Child process
-
+			// 	Child process
 			process_index = i;
-			logSpawnedChild(getpid());
+			logSpawnedChild();
 			doChildProcessWork();
-
 			break;
 		}
 		default: {
-			// Parent process
-
+			// 	Parent process
 			break;
 		}
 		}
 	}
 }
 
-void logSpawnedChild(int pid) {
+void logSpawnedChild() {
 	sem_wait(m_semaphore);
-
-	child_processes[*num_of_running_processes] = getpid();
 	*num_of_running_processes = *num_of_running_processes + 1;
-
-	std::cout << "Child " << process_index << " running"
-			<< std::endl;
-
 	sem_post(m_semaphore);
 }
 
 void doChildProcessWork() {
-	int offset = ((process_index - 1) * working_list_size) - 1;
+	int offset = ((process_index - 1) * WORKING_LIST_SIZE);
+
+	//	Assigning work to child process
 	working_list = getWorkingList(p_master_unsorted_list, offset,
-			working_list_size);
+			WORKING_LIST_SIZE);
 
-	sem_wait(m_semaphore);
-	for (int i = 0; i < 10; i++) {
-		std::cout << "PID: " << process_index << " "
-				<< working_list.at(i) << std::endl;
-	}
-	sem_post(m_semaphore);
+	std::cout << "CHILD " << process_index << " IS RUNNING" << std::endl;
+	std::cout << "Working with " << working_list.size() << " elements"
+			<< std::endl;
 
-	exitAndCleanChildProcess();
+	doSelectionSort(working_list);
 }
 
-std::vector<long> getWorkingList(long* list, int offset, int length) {
+std::vector<long> getWorkingList(long* list, unsigned int offset,
+		unsigned int length) {
 	std::vector<long> tmp_list;
 
 	for (int i = offset; i < (length + offset); i++) {
@@ -178,51 +159,122 @@ std::vector<long> getWorkingList(long* list, int offset, int length) {
 	return tmp_list;
 }
 
-void writeToScreen(std::vector<long> &list) {
+void onChildProcessFinished() {
+	exitAndCleanChildProcess();
+}
+
+void appendElementsToMasterList(long list[], unsigned int length) {
 	sem_wait(m_semaphore);
+	for (int i = 0; i < length; i++) {
 
-	/*
-	 * CRITICAL SECTION
-	 */
-	std::cout << "PID: " << process_index << std::endl;
-	for (int i = 0; i < list.size(); i++) {
-		std::cout << list.at(i) << std::endl;
+		//	Appending elements from the buffer and incrementing
+		//	the global index as we go.
+		p_master_list[*curr_index] = list[i];
+
+		*curr_index = *curr_index + 1;
+
+		//	Hint to the parent process to sort these 10 elements
+		*should_sort = true;
 	}
-
 	sem_post(m_semaphore);
 }
 
-void doSelectionSort(std::vector<long> &unsortedList) {
+void doSelectionSort(std::vector<long> &list) {
 	long minIndex;
 	long tempVal;
 	long i;
 	long j;
 
-	for (i = 0; i < unsortedList.size() - 1; i++) {
+	const int BUFFER_SIZE = 10;
+	long buffer[BUFFER_SIZE];
+
+	for (i = 0; i < list.size(); i++) {
 		minIndex = i;
 
-		for (j = i + 1; j < unsortedList.size(); j++) {
+		for (j = i + 1; j < list.size(); j++) {
 
-			if (unsortedList.at(j) < unsortedList.at(minIndex)) {
+			if (list.at(j) < list.at(minIndex)) {
 				minIndex = j;
 			}
 		}
 
 		if (minIndex != i) {
-			tempVal = unsortedList.at(i);
-			unsortedList.at(i) = unsortedList.at(minIndex);
-			unsortedList.at(minIndex) = tempVal;
+			tempVal = list.at(i);
+			list.at(i) = list.at(minIndex);
+			list.at(minIndex) = tempVal;
+		}
+
+		//	Adding elements to buffer
+		buffer[i % BUFFER_SIZE] = list.at(i);
+		if ((i + 1) % BUFFER_SIZE == 0) {
+			appendElementsToMasterList(buffer, BUFFER_SIZE);
 		}
 	}
+
+	onChildProcessFinished();
+}
+
+void doQuickSort(long* unsortedList, long leftMost, long rightMost) {
+	long tempVal;
+	long i = leftMost;
+	long j = rightMost;
+	long pivotVal = unsortedList[(leftMost + rightMost) / 2];
+
+	while (i <= j) {
+		while (unsortedList[i] < pivotVal)
+			i++;
+		while (unsortedList[j] > pivotVal)
+			j--;
+		if (i <= j) {
+			tempVal = unsortedList[i];
+			unsortedList[i] = unsortedList[j];
+			unsortedList[j] = tempVal;
+			i++;
+			j--;
+		}
+	}
+
+	if (leftMost < j) {
+		doQuickSort(unsortedList, leftMost, j);
+	}
+	if (i < rightMost) {
+		doQuickSort(unsortedList, i, rightMost);
+	}
+}
+
+void readInData(std::vector<long> &list) {
+	std::cout << "Reading data in..." << std::endl;
+	std::ifstream inStream("numbers.txt");
+	std::string m_line;
+	while (std::getline(inStream, m_line)) {
+
+		//	Converting from a string to an long.
+		long number = strtol((char*) m_line.c_str(), NULL, 0);
+		list.push_back(number);
+	}
+	inStream.close();
+
+	std::cout << list.size() << " elements read" << std::endl;
+}
+
+void writeContentsToFile(long list[], std::string fileName) {
+	std::cout << "Writing contents to file..." << std::endl;
+	std::ofstream outFile((char*) fileName.c_str(), std::ios::app);
+
+	for (int i = 0; i < ARRAY_SIZE; i++) {
+		outFile << list[i] << std::endl;
+	}
+	outFile.close();
+
+	std::cout << "Data written to: " << fileName << "\n\n";
 }
 
 void exitAndCleanChildProcess() {
 	sem_wait(m_semaphore);
 
-	std::cout << "Child " << process_index << " is finishing"
-			<< std::endl;
-	*num_of_running_processes = *num_of_running_processes - 1;
+	std::cout << "CHILD " << process_index << " HAS FINISHED" << std::endl;
 
+	*num_of_running_processes = *num_of_running_processes - 1;
 	sem_post(m_semaphore);
 
 	exit(EXIT_SUCCESS);
@@ -231,10 +283,10 @@ void exitAndCleanChildProcess() {
 void exitAndCleanParentProcess() {
 	sem_destroy(m_semaphore);
 	munmap(m_semaphore, sizeof(sem_t));
-	munmap(p_master_unsorted_list, sizeof(p_master_unsorted_list[0]) * ARRAY_SIZE);
-	munmap(p_master_unsorted_list, sizeof(p_master_sorted_list[0]) * ARRAY_SIZE);
+	munmap(p_master_unsorted_list,
+			sizeof(p_master_unsorted_list[0]) * ARRAY_SIZE);
+	munmap(p_master_unsorted_list, sizeof(p_master_list[0]) * ARRAY_SIZE);
 	munmap(num_of_running_processes, sizeof(*num_of_running_processes));
-	munmap(child_processes, sizeof(child_processes));
 
 	exit(EXIT_SUCCESS);
 }

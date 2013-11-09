@@ -1,64 +1,70 @@
+//  CS3242 Operating Systems
+//  Fall 2013
+//  Project 4: Process Synchronization, Part 1
+//  Nick Champagne and John Mutabazi
+//  Date: 10/23/2013
+//  File: project4a.cpp
 
 #include "buffer.h"
-#include <stdio.h>
-#include <semaphore.h>
 
+using namespace std;
 
-void *producer(int *item);
-void *consumer (int *arg);
-
+void *producer(void *item);
+void *consumer(void *arg);
 
 sem_t full;
-//int rc =sem_init(&full, 1, 0);
 sem_t empty;
-//int s=sem_init(&empty, 1, 10);
-sem_t mutex;
-//int p=sem_init(&mutex, 1, 1);
+pthread_mutex_t mutex =  PTHREAD_MUTEX_INITIALIZER;
 
+int main(int argc, char *argv[]) {
+	printf("main starting:");
 
-int main(int argc, char *argv[]){
-    int tts= (int)argv[0]; //time to sleep
-    
-    int numbOfPro= (int)argv[1]; //number of producers
-    int numbOfCon= (int)argv[2];
-      
-    buf_init();
-    
-    producer(&numbOfPro);
-    consumer(&numbOfCon);
-    
+	pthread_t pid, pid1;
+
+	pthread_create(&pid, NULL, &producer, NULL);
+	pthread_create(&pid1, NULL,& consumer, NULL);
+
+	buf_init(); //initializing buffer
+
+	sleep(1);
+	exit(0);
 }
 
-void *producer(int *arg){
-    int count =0;
-    buffer_item item;
-    do{
-        //will create threads here
-        item = rand();
-        sem_wait(&empty);
-        sem_wait(&mutex);
-        int result =insert_item(&item);
-        printf((&result==0?"successfully added":"failed to add"));
-        count++;
-        signal(&mutex);
-        signal(&empty);
-        
-    }while(&count!=arg);
+void *producer(void *val) {
+	int count = 0;
+	buffer_item item;
+
+	printf("\nProducer created");
+	do {
+		item = rand();
+
+		pthread_mutex_lock(&mutex);
+		insert_item(item);
+		printf("producer produced %d\n", item);
+		count++;
+
+		pthread_mutex_unlock(&mutex);
+
+	} while (true);
+	printf("Number of producers produced %d", count);
+	return NULL;
 }
 
-void *consumer(int *arg){
-    int count =0;
-        do{
-            //will create threads here
-            sem_wait(&full);
-            sem_wait(&mutex);
-            
-            int result =remove_item();
-            printf((result==0?"successfully removed":"failed to remove"));
-            count++;
-            
-            signal(&mutex);
-            signal(&empty);
-        count++;
-    }while(&count!=arg);
+void *consumer(void *arg) {
+	int count = 0;
+	printf("\nConsumer created");
+	do {
+		pthread_mutex_lock(&mutex); //mutex acquired
+
+		int item_Removed = remove_item();
+
+		printf("Consumer consumed %d\n", item_Removed);
+		count++;
+
+		pthread_mutex_unlock(&mutex); //mutex released
+		count++;
+
+	} while (&count != arg);
+	printf("Number of consumers produced %d ", count);
+	return NULL;
 }
